@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start | LemonovOS</title>
+    <style>
+        :root {
+            --accent: #cba6f7; 
+            --accent-glow: color-mix(in srgb, var(--accent) 30%, transparent);
+            --border-highlight: color-mix(in srgb, var(--accent) 50%, transparent);
+
+            /* Тема LemonovOS */
+            --bg-base: #0f0f14; 
+            --bg-mantle: #181825;
+            --text-main: #cdd6f4;
+            --text-muted: #a6adc8;
+            --glass-bg: rgba(30, 30, 46, 0.6);
+            --glass-hover: rgba(45, 45, 65, 0.8);
+            --border: rgba(255, 255, 255, 0.08);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            
+            --blur-amount: 12px;
+            --bg-image: none;
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        [data-theme="light"] {
+            --bg-base: #e6e9ef; --bg-mantle: #eff1f5; --text-main: #4c4f69; --text-muted: #7c7f93;
+            --glass-bg: rgba(255, 255, 255, 0.6); --glass-hover: rgba(255, 255, 255, 0.9);
+            --border: rgba(0, 0, 0, 0.08); --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        [data-theme="boring"] {
+            --bg-base: #202124; --bg-mantle: #292a2d; --text-main: #e8eaed; --text-muted: #9aa0a6;
+            --glass-bg: rgba(41, 42, 45, 0.6); --glass-hover: rgba(60, 64, 67, 0.8);
+            --border: rgba(255, 255, 255, 0.1); --shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        
+        body {
+            background-color: var(--bg-base); color: var(--text-main);
+            background-image: var(--bg-image); background-size: cover; background-position: center; background-attachment: fixed;
+            min-height: 100vh; display: flex; flex-direction: column; align-items: center; 
+            justify-content: center; overflow-x: hidden; transition: background-color 0.3s, justify-content 0.3s, padding 0.3s; 
+            padding-bottom: 50px;
+        }
+
+        body.has-news, body.has-tools { justify-content: flex-start; padding-top: 6vh; }
+        
+        body.zen-mode .search-container, body.zen-mode .bookmarks-wrapper, 
+        body.zen-mode .news-wrapper, body.zen-mode .tools-wrapper, 
+        body.zen-mode .weather-widget, body.zen-mode .countdown-box, body.zen-mode .greeting { 
+            display: none !important; 
+        }
+        body.zen-mode { justify-content: center; padding-top: 0; }
+
+        /* Анимированный фон */
+        .bg-blobs { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1; overflow: hidden; pointer-events: none; transition: opacity 0.5s; }
+        .blob { position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.4; }
+        .blob-1 { width: 60vw; height: 60vw; background: var(--accent-glow); animation: float-1 180s infinite linear; }
+        .blob-2 { width: 70vw; height: 70vw; background: rgba(46, 172, 252, 0.15); animation: float-2 220s infinite linear; }
+
+        @keyframes float-1 { 0% { top: -10%; left: -10%; transform: scale(1); } 25% { top: 50%; left: 80%; transform: scale(1.1); } 50% { top: 80%; left: 20%; transform: scale(1); } 75% { top: 20%; left: -30%; transform: scale(0.9); } 100% { top: -10%; left: -10%; transform: scale(1); } }
+        @keyframes float-2 { 0% { bottom: -20%; right: -10%; transform: scale(1.1); } 30% { bottom: 60%; right: 70%; transform: scale(1); } 60% { bottom: 10%; right: 30%; transform: scale(0.9); } 85% { bottom: 80%; right: -20%; transform: scale(1); } 100% { bottom: -20%; right: -10%; transform: scale(1.1); } }
+
+        /* Иконка настроек */
+        .settings-btn { position: fixed; top: 25px; right: 25px; background: var(--glass-bg); border: 1px solid var(--border); color: var(--text-muted); cursor: pointer; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: var(--transition); z-index: 100; backdrop-filter: blur(var(--blur-amount)); outline: none; }
+        .settings-btn:hover { color: var(--accent); transform: rotate(90deg); border-color: var(--border-highlight); box-shadow: 0 0 15px var(--accent-glow); }
+        .settings-btn svg { width: 22px; height: 22px; }
+
+        /* МОДАЛЬНОЕ ОКНО */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); opacity: 0; visibility: hidden; transition: var(--transition); z-index: 999; display: flex; align-items: center; justify-content: center; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal { background: var(--bg-mantle); border: 1px solid var(--border-highlight); padding: 0; border-radius: 20px; width: 90%; max-width: 480px; transform: translateY(30px); transition: var(--transition); box-shadow: var(--shadow); position: relative; overflow: hidden; max-height: 90vh; display: flex; flex-direction: column; }
+        .modal-overlay.active .modal { transform: translateY(0); }
+        
+        .modal-header { padding: 20px 25px; border-bottom: 1px solid var(--border); background: var(--bg-base); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        .modal-header h2 { font-size: 1.3rem; display: flex; align-items: center; gap: 10px; margin: 0; }
+        .modal-close { background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem; transition: var(--transition); width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+        .modal-close:hover { color: #f38ba8; background: rgba(243, 139, 168, 0.1); }
+        
+        .modal-body { padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+        .settings-section-title { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 10px; font-weight: 600; }
+        
+        .input-group { margin-bottom: 12px; }
+        .input-group label { display: block; margin-bottom: 6px; font-size: 0.9rem; color: var(--text-main); }
+        .input-group select, .input-group input[type="text"], .input-group input[type="date"] { width: 100%; padding: 10px 12px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px; outline: none; transition: var(--transition); font-size: 0.95rem; }
+        .input-group select:focus, .input-group input[type="text"]:focus, .input-group input[type="date"]:focus { border-color: var(--accent); box-shadow: 0 0 10px var(--accent-glow); }
+        .input-group input[type="range"] { width: 100%; accent-color: var(--accent); }
+        
+        .color-picker-wrapper { display: flex; align-items: center; justify-content: space-between; padding: 10px 15px; background: var(--bg-base); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 12px; }
+        .color-picker-wrapper input[type="color"] { -webkit-appearance: none; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; overflow: hidden; background: transparent; padding: 0; }
+        .color-picker-wrapper input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        .color-picker-wrapper input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+
+        .toggle-label { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 10px 15px; background: var(--bg-base); border-radius: 12px; border: 1px solid var(--border); transition: var(--transition); margin-bottom: 8px;}
+        .toggle-label input { display: none; }
+        .toggle-switch { width: 40px; height: 22px; background: var(--glass-hover); border-radius: 20px; position: relative; transition: var(--transition); }
+        .toggle-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; background: var(--text-muted); border-radius: 50%; transition: var(--transition); }
+        .toggle-label input:checked + .toggle-switch { background: var(--accent); }
+        .toggle-label input:checked + .toggle-switch::after { transform: translateX(18px); background: #fff; }
+
+        .btn-primary { width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: var(--transition); }
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 5px 15px var(--accent-glow); }
+        
+        .settings-row { display: flex; gap: 10px; }
+        .settings-row button { flex: 1; padding: 10px; background: var(--bg-base); border: 1px solid var(--border); color: var(--text-main); border-radius: 10px; cursor: pointer; transition: var(--transition); }
+        .settings-row button:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* ОСНОВНОЙ КОНТЕЙНЕР */
+        .container { width: 100%; max-width: 900px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 25px; z-index: 10; flex-shrink: 0; }
+
+        /* Верхняя панель: Время - Приветствие - Погода */
+        .top-widget { display: flex; align-items: center; justify-content: center; gap: 30px; flex-wrap: wrap; width: 100%; }
+        
+        .clock { font-size: 5.5rem; font-weight: 800; letter-spacing: -2px; text-shadow: 0 10px 30px rgba(0,0,0,0.5); line-height: 1; }
+        .clock.style-neon { text-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent-glow); }
+        .clock.style-glitch { animation: clock-glitch 4s infinite; }
+        @keyframes clock-glitch {
+            0% { text-shadow: 2px 0 0 rgba(255,0,0,0.3), -2px 0 0 rgba(0,0,255,0.3); }
+            1% { transform: translate(2px, -1px); }
+            2% { transform: translate(-1px, 1px); text-shadow: -3px 0 0 rgba(255,0,0,0.5), 3px 0 0 rgba(0,0,255,0.5); }
+            3% { transform: translate(0, 0); text-shadow: 2px 0 0 rgba(255,0,0,0.3), -2px 0 0 rgba(0,0,255,0.3); }
+            100% { text-shadow: 2px 0 0 rgba(255,0,0,0.1), -2px 0 0 rgba(0,0,255,0.1); }
+        }
+
+        .greeting { font-size: 1.2rem; font-weight: 600; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 2px 10px rgba(0,0,0,0.4); padding: 0 10px; }
+
+        .weather-widget { display: flex; align-items: center; gap: 15px; background: var(--glass-bg); padding: 10px 20px; border-radius: 20px; border: 1px solid var(--border); backdrop-filter: blur(var(--blur-amount)); cursor: pointer; transition: var(--transition); box-shadow: var(--shadow); }
+        .weather-widget:hover { border-color: var(--border-highlight); transform: translateY(-2px); background: var(--glass-hover); }
+        .weather-icon { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: var(--accent); }
+        .weather-icon svg { width: 100%; height: 100%; stroke-width: 1.5; }
+        .weather-info { display: flex; flex-direction: column; }
+        .weather-temp { font-size: 1.2rem; font-weight: bold; }
+        .weather-desc { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* ВИДЖЕТ ТАЙМЕРА */
+        .countdown-box { display: none; background: var(--glass-bg); border: 1px solid var(--border); backdrop-filter: blur(var(--blur-amount)); box-shadow: var(--shadow); padding: 10px 20px; border-radius: 16px; font-size: 0.9rem; font-weight: 500; text-align: center; max-width: 400px; animation: fadeIn 0.5s ease; }
+        .countdown-box.active { display: block; }
+        .countdown-title { color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
+        .countdown-values { color: var(--accent); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+        .search-container { width: 100%; max-width: 600px; position: relative; }
+        .search-input { width: 100%; padding: 20px 25px; padding-left: 60px; font-size: 1.1rem; background: var(--glass-bg); border: 1px solid var(--border); border-radius: 20px; color: var(--text-main); outline: none; transition: var(--transition); backdrop-filter: blur(var(--blur-amount)); box-shadow: var(--shadow); }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 10px 30px var(--accent-glow); background: var(--glass-hover); }
+        .search-icon { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 22px; height: 22px; }
+        .search-input:focus + .search-icon { color: var(--accent); }
+
+        /* ЗАКЛАДКИ */
+        .bookmarks-wrapper { width: 100%; max-width: 750px; display: flex; flex-direction: column; gap: 20px; align-items: center; }
+        .folder-group { width: 100%; display: flex; flex-direction: column; align-items: center; }
+        .folder-title { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+        
+        .bookmarks-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 15px; width: 100%; justify-items: center; }
+        .bookmark { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: var(--text-main); padding: 10px; border-radius: 16px; transition: var(--transition); width: 100%; border: 1px solid transparent; }
+        .bookmark:hover { background: var(--glass-bg); border-color: var(--border); backdrop-filter: blur(var(--blur-amount)); transform: translateY(-3px); }
+        .bm-icon-wrapper { width: 50px; height: 50px; background: var(--bg-mantle); border-radius: 14px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); transition: var(--transition); box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden; }
+        .bm-icon-wrapper img { width: 26px; height: 26px; object-fit: contain; }
+        .bookmark:hover .bm-icon-wrapper { border-color: var(--border-highlight); box-shadow: 0 8px 20px var(--accent-glow); }
+        .bm-title { font-size: 0.8rem; font-weight: 500; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        
+        .bm-delete { position: absolute; top: 0; right: 0; background: #f38ba8; color: #11111b; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; border: none; cursor: pointer; opacity: 0; transform: scale(0.5); transition: var(--transition); z-index: 2; }
+        .bookmark:hover .bm-delete { opacity: 1; transform: scale(1); }
+        .bm-delete:hover { background: #ff5e81; transform: scale(1.15) !important; }
+
+        .bookmark-add .bm-icon-wrapper { background: var(--glass-bg); border: 1px dashed var(--text-muted); color: var(--text-muted); cursor: pointer; }
+        .bookmark-add:hover .bm-icon-wrapper { border: 1px solid var(--accent); color: var(--accent); background: var(--glass-hover); }
+
+        /* ИНСТРУМЕНТЫ */
+        .tools-wrapper { width: 100%; max-width: 750px; display: none; gap: 20px; flex-wrap: wrap; margin-top: 10px; }
+        .tools-wrapper.active { display: flex; animation: fadeIn 0.5s ease; }
+        .tool-box { flex: 1; min-width: 300px; background: var(--glass-bg); border: 1px solid var(--border); border-radius: 20px; padding: 20px; backdrop-filter: blur(var(--blur-amount)); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 10px; }
+        .tool-box h3 { font-size: 1rem; color: var(--accent); display: flex; align-items: center; gap: 8px; }
+        
+        #notes-input { width: 100%; height: 120px; background: var(--bg-base); border: 1px solid var(--border); border-radius: 12px; color: var(--text-main); padding: 12px; font-size: 0.9rem; outline: none; resize: none; transition: var(--transition); }
+        #notes-input:focus { border-color: var(--accent); }
+        
+        #todo-list { list-style: none; overflow-y: auto; max-height: 120px; display: flex; flex-direction: column; gap: 8px; padding-right: 5px;}
+        #todo-list::-webkit-scrollbar { width: 4px; }
+        #todo-list::-webkit-scrollbar-thumb { background: var(--border-highlight); border-radius: 4px; }
+        #todo-list li { display: flex; justify-content: space-between; align-items: center; background: var(--bg-base); padding: 8px 12px; border-radius: 10px; font-size: 0.9rem; border: 1px solid var(--border); }
+        #todo-list li.done span { text-decoration: line-through; color: var(--text-muted); }
+        #todo-list li span { cursor: pointer; flex-grow: 1; word-break: break-word;}
+        #todo-list li button { background: none; border: none; color: #f38ba8; cursor: pointer; font-size: 1rem; opacity: 0.5; transition: var(--transition); }
+        #todo-list li:hover button { opacity: 1; }
+        #todo-input { width: 100%; padding: 10px 12px; background: var(--bg-base); border: 1px solid var(--border); border-radius: 10px; color: var(--text-main); font-size: 0.9rem; outline: none; transition: var(--transition); }
+        #todo-input:focus { border-color: var(--accent); }
+
+        /* ЛЕНТА НОВОСТЕЙ */
+        .news-wrapper { width: 100%; max-width: 1200px; padding: 0 20px; margin-top: 20px; display: none; flex-direction: column; gap: 15px; }
+        .news-wrapper.active { display: flex; animation: fadeIn 0.8s ease; }
+        .news-tabs { display: flex; gap: 10px; border-bottom: 1px solid var(--border); padding-bottom: 10px; overflow-x: auto; scrollbar-width: none; }
+        .news-tabs::-webkit-scrollbar { display: none; }
+        .news-tab { background: transparent; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 600; cursor: pointer; padding: 8px 15px; border-radius: 12px; transition: var(--transition); white-space: nowrap; }
+        .news-tab:hover { background: var(--glass-bg); color: var(--text-main); }
+        .news-tab.active { background: var(--accent); color: #fff; }
+        .news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .news-card { background: var(--glass-bg); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; text-decoration: none; color: var(--text-main); transition: var(--transition); display: flex; flex-direction: column; backdrop-filter: blur(var(--blur-amount)); box-shadow: var(--shadow); }
+        .news-card:hover { transform: translateY(-4px); border-color: var(--border-highlight); box-shadow: 0 10px 25px var(--accent-glow); background: var(--glass-hover); }
+        .news-image { width: 100%; height: 150px; background: var(--bg-mantle); object-fit: cover; border-bottom: 1px solid var(--border); }
+        .news-content { padding: 15px; display: flex; flex-direction: column; gap: 10px; flex-grow: 1; }
+        .news-title { font-size: 0.95rem; font-weight: 600; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .news-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: var(--text-muted); margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) {
+            .top-widget { flex-direction: column; gap: 15px; } /* На мобилках выстраиваем вертикально */
+            .clock { font-size: 4rem; }
+            .search-input { font-size: 1rem; padding: 16px 20px 16px 50px; }
+            .weather-widget { padding: 8px 15px; }
+            .bookmarks-grid { grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); gap: 10px; }
+            .bm-icon-wrapper { width: 44px; height: 44px; }
+            .settings-btn { top: 15px; right: 15px; width: 38px; height: 38px; }
+            .modal { width: 95%; max-height: 85vh; }
+            .modal-body { padding: 15px; }
+            .news-wrapper { padding: 0 10px; }
+            .tools-wrapper { flex-direction: column; padding: 0 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-blobs" id="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+
+    <button class="settings-btn" id="btn-settings" title="Настройки">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+    </button>
+
+    <div class="container">
+        <div class="top-widget">
+            <div class="clock" id="clock">00:00</div>
+            <div class="greeting" id="greeting">Привет!</div>
+            <div class="weather-widget" id="weather-widget" onclick="requestWeather()">
+                <div class="weather-icon" id="w-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
+                </div>
+                <div class="weather-info">
+                    <span class="weather-temp" id="w-temp">--°C</span>
+                    <span class="weather-desc" id="w-desc">Погода...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="countdown-box" id="countdown-box">
+            <div class="countdown-title" id="countdown-title">До события:</div>
+            <div class="countdown-values" id="countdown-values">00д 00ч 00м</div>
+        </div>
+
+        <form class="search-container" id="search-form">
+            <input type="text" class="search-input" id="search-input" placeholder="Искать в интернете..." autocomplete="off" autofocus>
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        </form>
+
+        <div class="bookmarks-wrapper" id="bookmarks-container"></div>
+    </div>
+
+    <div class="tools-wrapper" id="tools-wrapper">
+        <div class="tool-box" id="todo-box">
+            <h3><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"></path></svg> Задачи</h3>
+            <ul id="todo-list"></ul>
+            <input type="text" id="todo-input" placeholder="Добавить задачу (Enter)...">
+        </div>
+        <div class="tool-box" id="notes-box">
+            <h3><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg> Заметки</h3>
+            <textarea id="notes-input" placeholder="Запиши что-нибудь важное..."></textarea>
+        </div>
+    </div>
+
+    <div class="news-wrapper" id="news-wrapper">
+        <div class="news-tabs" id="news-tabs">
+            <button class="news-tab active" data-category="general">Главное</button>
+            <button class="news-tab" data-category="tech">Технологии</button>
+            <button class="news-tab" data-category="games">Игры</button>
+            <button class="news-tab" data-category="sport">Спорт</button>
+        </div>
+        <div class="news-grid" id="news-list">
+            <div class="news-card"><div class="news-content"><div class="news-title">Загрузка ленты...</div></div></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-settings">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg> Настройки</h2>
+                <button class="modal-close" onclick="closeModal('modal-settings')">✕</button>
+            </div>
+            
+            <div class="modal-body">
+                <div>
+                    <div class="settings-section-title">Внешний вид и Обои</div>
+                    <label class="toggle-label" style="border-color: var(--accent); margin-bottom: 12px;">
+                        <span style="font-weight: bold; color: var(--accent);">Дзен Режим (Скрыть всё лишнее)</span>
+                        <input type="checkbox" id="zen-toggle">
+                        <div class="toggle-switch"></div>
+                    </label>
+                    
+                    <div class="input-group">
+                        <select id="theme-select">
+                            <option value="dark">Тёмная тема (LemonovOS)</option>
+                            <option value="light">Светлая тема</option>
+                            <option value="boring">Скучная (Classic Gray)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Стиль часов</label>
+                        <select id="clock-style-select">
+                            <option value="flat">Обычный (Flat)</option>
+                            <option value="neon">Неоновое свечение</option>
+                            <option value="glitch">Глитч-эффект</option>
+                        </select>
+                    </div>
+                    <div class="color-picker-wrapper">
+                        <span>Акцентный цвет</span>
+                        <input type="color" id="accent-picker" value="#cba6f7">
+                    </div>
+                    <div class="input-group">
+                        <label>Размытие стекла (Blur)</label>
+                        <input type="range" id="blur-slider" min="0" max="30" value="12">
+                    </div>
+                    <div class="input-group">
+                        <label>Ссылка на обои (URL)</label>
+                        <input type="text" id="bg-image-input" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <label class="toggle-label">
+                        <span>Анимированный фон (Сферы)</span>
+                        <input type="checkbox" id="bg-toggle">
+                        <div class="toggle-switch"></div>
+                    </label>
+                </div>
+
+                <div>
+                    <div class="settings-section-title">Виджеты и Данные</div>
+                    <label class="toggle-label">
+                        <span>Включить таймер событий</span>
+                        <input type="checkbox" id="countdown-toggle">
+                        <div class="toggle-switch"></div>
+                    </label>
+                    <div class="input-group">
+                        <label>Название события</label>
+                        <input type="text" id="countdown-title-input" placeholder="До релиза LemonovOS">
+                    </div>
+                    <div class="input-group" style="margin-bottom: 20px;">
+                        <label>Дата события</label>
+                        <input type="date" id="countdown-date-input">
+                    </div>
+
+                    <div class="input-group">
+                        <select id="engine-select">
+                            <option value="yandex">Поиск Yandex</option>
+                            <option value="google">Поиск Google</option>
+                            <option value="duckduckgo">Поиск DuckDuckGo</option>
+                        </select>
+                    </div>
+                    
+                    <label class="toggle-label">
+                        <span>Приветствие ("Добрый день")</span>
+                        <input type="checkbox" id="greeting-toggle">
+                        <div class="toggle-switch"></div>
+                    </label>
+                    <label class="toggle-label">
+                        <span>Виджет погоды</span>
+                        <input type="checkbox" id="weather-toggle">
+                        <div class="toggle-switch"></div>
+                    </label>
+                    <label class="toggle-label">
+                        <span>Задачи и Заметки</span>
+                        <input type="checkbox" id="tools-toggle">
+                        <div class="toggle-switch"></div>
+                    </label>
+                    <label class="toggle-label" style="border-color: var(--border-highlight);">
+                        <span style="font-weight: 600; color: var(--accent);">Лента Новостей</span>
+                        <input type="checkbox" id="news-toggle">
+                        <div class="toggle-switch"></div>
+                    </label>
+                </div>
+
+                <div>
+                    <div class="settings-section-title">Резервная копия</div>
+                    <div class="settings-row">
+                        <button onclick="exportConfig()">Экспорт (Скачать)</button>
+                        <button onclick="document.getElementById('import-file').click()">Импорт</button>
+                        <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importConfig(event)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-add-bm">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Новая закладка</h2>
+                <button class="modal-close" onclick="closeModal('modal-add-bm')">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="add-bm-form">
+                    <div class="input-group">
+                        <label>Ссылка (домен или URL) *</label>
+                        <input type="text" id="bm-url" placeholder="youtube.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Название *</label>
+                        <input type="text" id="bm-title" placeholder="YouTube" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Папка / Категория (необязательно)</label>
+                        <input type="text" id="bm-folder" placeholder="Например: Работа">
+                    </div>
+                    <div class="input-group">
+                        <label>Кастомная иконка (URL, необязательно)</label>
+                        <input type="text" id="bm-icon" placeholder="Ссылка на картинку">
+                    </div>
+                    <button type="submit" class="btn-primary" style="margin-top: 10px;">Сохранить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      
+              const weatherIcons = {
+            clear: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`,
+            cloudy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
+            mist: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="1" y1="10" x2="23" y2="10"></line><line x1="1" y1="14" x2="23" y2="14"></line><line x1="4" y1="18" x2="20" y2="18"></line><line x1="4" y1="6" x2="20" y2="6"></line></svg>`,
+            rain: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 13a4 4 0 0 1-8 0v-3a4 4 0 0 1 8 0v3z"></path><path d="M20 16.66A8 8 0 1 0 8 3.34a8 8 0 0 0 12 13.32z"></path><line x1="12" y1="22" x2="12" y2="18"></line><line x1="8" y1="20" x2="8" y2="18"></line><line x1="16" y1="20" x2="16" y2="18"></line></svg>`,
+            snow: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path><line x1="12" y1="22" x2="12" y2="22.01"></line><line x1="8" y1="20" x2="8" y2="20.01"></line><line x1="16" y1="20" x2="16" y2="20.01"></line></svg>`,
+            thunder: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path><polyline points="13 22 10 18 12 18 9 14"></polyline></svg>`,
+            default: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>`
+        };
+        const rssFeeds = { 'general': 'https://lenta.ru/rss/news', 'tech': 'https://3dnews.ru/news/rss', 'games': 'https://stopgame.ru/rss/new/games', 'sport': 'https://www.championat.com/rss/news/' };
+        
+        let bookmarks = JSON.parse(localStorage.getItem('bookmarks')) || [];
+        let todos = JSON.parse(localStorage.getItem('todos')) || [];
+        
+        const ui = {
+            engine: document.getElementById('engine-select'),
+            theme: document.getElementById('theme-select'),
+            clockStyle: document.getElementById('clock-style-select'),
+            accent: document.getElementById('accent-picker'),
+            newsToggle: document.getElementById('news-toggle'),
+            toolsToggle: document.getElementById('tools-toggle'),
+            weatherToggle: document.getElementById('weather-toggle'),
+            greetingToggle: document.getElementById('greeting-toggle'),
+            zenToggle: document.getElementById('zen-toggle'),
+            bgToggle: document.getElementById('bg-toggle'),
+            bgInput: document.getElementById('bg-image-input'),
+            blurSlider: document.getElementById('blur-slider'),
+            notesInput: document.getElementById('notes-input'),
+            
+            countdownToggle: document.getElementById('countdown-toggle'),
+            countdownTitleInput: document.getElementById('countdown-title-input'),
+            countdownDateInput: document.getElementById('countdown-date-input')
+        };
+
+        // ==========================================
+        // 2. ФУНКЦИИ 
+        // ==========================================
+        const openModal = (id) => document.getElementById(id).classList.add('active');
+        const closeModal = (id) => document.getElementById(id).classList.remove('active');
+
+        // Центровка теперь реагирует ТОЛЬКО на включение новостей
+        function updateLayoutCentering() {
+            ui.newsToggle.checked ? document.body.classList.add('has-news') : document.body.classList.remove('has-news');
+            ui.zenToggle.checked ? document.body.classList.add('zen-mode') : document.body.classList.remove('zen-mode');
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const is12 = localStorage.getItem('timeFormat') === '12';
+            document.getElementById('clock').innerText = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: is12 });
+            
+            const hour = now.getHours();
+            let greetingText = "Привет!";
+            if (hour >= 5 && hour < 12) greetingText = "Доброе утро";
+            else if (hour >= 12 && hour < 17) greetingText = "Добрый день";
+            else if (hour >= 17 && hour < 23) greetingText = "Добрый вечер";
+            else greetingText = "Доброй ночи";
+            
+            document.getElementById('greeting').innerText = greetingText;
+        }
+
+        function updateClockStyle() {
+            const clockEl = document.getElementById('clock');
+            clockEl.className = "clock"; 
+            if (ui.clockStyle.value !== 'flat') clockEl.classList.add(`style-${ui.clockStyle.value}`);
+        }
+
+        function updateCountdown() {
+            const box = document.getElementById('countdown-box');
+            if (!ui.countdownToggle.checked || !ui.countdownDateInput.value) {
+                box.classList.remove('active');
+                return;
+            }
+            
+            const targetDate = new Date(ui.countdownDateInput.value);
+            const now = new Date();
+            const diff = targetDate - now;
+            
+            box.classList.add('active');
+            document.getElementById('countdown-title').innerText = ui.countdownTitleInput.value.trim() || "До события:";
+            
+            if (diff <= 0) {
+                document.getElementById('countdown-values').innerText = "Событие наступило!";
+                return;
+            }
+            
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            
+            document.getElementById('countdown-values').innerText = `${days}д ${hours}ч ${minutes}м`;
+        }
+
+        function requestWeather() {
+            if (!ui.weatherToggle.checked) return;
+            const descEl = document.getElementById('w-desc');
+            const iconEl = document.getElementById('w-icon');
+            descEl.innerText = 'Поиск...';
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    pos => {
+                        fetch(`https://api.open-meteo.com/v1/forecast?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&current_weather=true`)
+                            .then(r => r.json()).then(d => {
+                                document.getElementById('w-temp').innerText = `${Math.round(d.current_weather.temperature) > 0 ? '+' : ''}${Math.round(d.current_weather.temperature)}°C`;
+                                let code = d.current_weather.weathercode, svg = weatherIcons.default, desc = 'Облачно';
+                                if (code === 0) { svg = weatherIcons.clear; desc = 'Ясно'; } else if (code >= 1 && code <= 3) { svg = weatherIcons.cloudy; desc = 'Облачно'; } else if (code >= 45 && code <= 48) { svg = weatherIcons.mist; desc = 'Туман'; } else if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) { svg = weatherIcons.rain; desc = 'Дождь'; } else if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) { svg = weatherIcons.snow; desc = 'Снег'; } else if (code >= 95) { svg = weatherIcons.thunder; desc = 'Гроза'; }
+                                iconEl.innerHTML = svg; descEl.innerText = desc;
+                            }).catch(() => descEl.innerText = 'Ошибка API');
+                    }, err => { descEl.innerText = err.code === 1 ? 'Блок. браузером' : 'Нет сигнала'; }, { timeout: 5000 }
+                );
+            } else descEl.innerText = 'Нет поддержки';
+        }
+
+        function loadNewsCategory(category) {
+            const list = document.getElementById('news-list');
+            list.innerHTML = '<div class="news-card" style="grid-column: 1 / -1; text-align:center; padding: 40px; background: transparent; border: none; box-shadow: none;">Загрузка...</div>';
+            fetch(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssFeeds[category])}&api_key=`)
+                .then(res => res.json()).then(data => {
+                    if(data.status !== 'ok') throw new Error();
+                    list.innerHTML = '';
+                    data.items.slice(0, 12).forEach(post => {
+                        let imgUrl = post.thumbnail || (post.enclosure && post.enclosure.link) || 'https://via.placeholder.com/400x200/181825/cba6f7?text=LemonovOS';
+                        list.innerHTML += `<a href="${post.link}" target="_blank" class="news-card"><img src="${imgUrl}" alt="News" class="news-image" onerror="this.src='https://via.placeholder.com/400x200/181825/cba6f7?text=LemonovOS'"><div class="news-content"><div class="news-title">${post.title}</div><div class="news-meta"><span style="color:var(--accent);">${data.feed.title || 'Новости'}</span><span>${new Date(post.pubDate).toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}</span></div></div></a>`;
+                    });
+                }).catch(() => list.innerHTML = '<div class="news-card" style="grid-column: 1 / -1; padding: 20px;">Ошибка загрузки.</div>');
+        }
+
+        function getFaviconUrl(url) { try { return `https://s2.googleusercontent.com/s2/favicons?domain=${new URL(url).hostname}&sz=128`; } catch { return 'https://via.placeholder.com/32/181825/cdd6f4?text=?'; } }
+
+        function renderBookmarks() {
+            const container = document.getElementById('bookmarks-container');
+            container.innerHTML = '';
+            const groups = { 'root': [] };
+            bookmarks.forEach((bm, i) => {
+                const folder = bm.folder ? bm.folder.trim().toUpperCase() : 'root';
+                if (!groups[folder]) groups[folder] = [];
+                groups[folder].push({ ...bm, index: i });
+            });
+
+            const renderGroup = (folderName, items) => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'folder-group';
+                if (folderName !== 'root') groupDiv.innerHTML = `<div class="folder-title">${folderName}</div>`;
+                const grid = document.createElement('div');
+                grid.className = 'bookmarks-grid';
+                
+                items.forEach(bm => {
+                    const iconSrc = bm.customIcon || getFaviconUrl(bm.url);
+                    grid.innerHTML += `<a href="${bm.url}" class="bookmark">
+                        <button class="bm-delete" onclick="deleteBookmark(event, ${bm.index})">✕</button>
+                        <div class="bm-icon-wrapper"><img src="${iconSrc}" onerror="this.src='https://via.placeholder.com/32/181825/cdd6f4?text=L'"></div>
+                        <span class="bm-title">${bm.title}</span>
+                    </a>`;
+                });
+                
+                if (folderName === 'root') {
+                    grid.innerHTML += `<div class="bookmark bookmark-add" onclick="openModal('modal-add-bm')"><div class="bm-icon-wrapper"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></div><span class="bm-title">Добавить</span></div>`;
+                }
+                groupDiv.appendChild(grid);
+                container.appendChild(groupDiv);
+            };
+
+            Object.keys(groups).forEach(key => { if(key !== 'root') renderGroup(key, groups[key]); });
+            renderGroup('root', groups['root']);
+        }
+
+        function renderTodos() {
+            const ul = document.getElementById('todo-list');
+            ul.innerHTML = '';
+            todos.forEach((t, i) => {
+                ul.innerHTML += `<li class="${t.done ? 'done' : ''}"><span onclick="toggleTodo(${i})">${t.text}</span> <button onclick="deleteTodo(${i})">✕</button></li>`;
+            });
+        }
+        window.toggleTodo = (i) => { todos[i].done = !todos[i].done; localStorage.setItem('todos', JSON.stringify(todos)); renderTodos(); };
+        window.deleteTodo = (i) => { todos.splice(i, 1); localStorage.setItem('todos', JSON.stringify(todos)); renderTodos(); };
+
+        document.getElementById('todo-input').addEventListener('keypress', e => {
+            if (e.key === 'Enter' && e.target.value.trim()) {
+                todos.push({ text: e.target.value.trim(), done: false });
+                localStorage.setItem('todos', JSON.stringify(todos));
+                e.target.value = ''; renderTodos();
+            }
+        });
+
+        ui.notesInput.value = localStorage.getItem('notes') || '';
+        ui.notesInput.addEventListener('input', e => localStorage.setItem('notes', e.target.value));
+
+        window.exportConfig = function() {
+            const data = JSON.stringify(localStorage);
+            const blob = new Blob([data], {type: 'application/json'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'lemonovos_start_config.json';
+            a.click();
+        };
+
+        window.importConfig = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    for (let key in data) localStorage.setItem(key, data[key]);
+                    location.reload();
+                } catch { alert("Ошибка файла конфига!"); }
+            };
+            reader.readAsText(file);
+        };
+
+        // ==========================================
+        // 3. ИНИЦИАЛИЗАЦИЯ 
+        // ==========================================
+        ui.engine.value = localStorage.getItem('searchEngine') || 'yandex';
+        ui.theme.value = localStorage.getItem('theme') || 'dark';
+        ui.clockStyle.value = localStorage.getItem('clockStyle') || 'flat';
+        
+        ui.weatherToggle.checked = localStorage.getItem('showWeather') !== 'false'; // по умолч. вкл
+        ui.greetingToggle.checked = localStorage.getItem('showGreeting') !== 'false'; // по умолч. вкл
+        ui.newsToggle.checked = localStorage.getItem('showNews') !== 'false';
+        ui.toolsToggle.checked = localStorage.getItem('showTools') === 'true';
+        ui.zenToggle.checked = localStorage.getItem('zenMode') === 'true';
+        ui.bgToggle.checked = localStorage.getItem('showBg') !== 'false';
+        ui.blurSlider.value = localStorage.getItem('blurAmount') || '12';
+        ui.bgInput.value = localStorage.getItem('bgImage') || '';
+        
+        ui.countdownToggle.checked = localStorage.getItem('showCountdown') === 'true';
+        ui.countdownTitleInput.value = localStorage.getItem('countdownTitle') || 'До релиза LemonovOS';
+        ui.countdownDateInput.value = localStorage.getItem('countdownDate') || '';
+        
+        const savedAccent = localStorage.getItem('accentColor') || '#cba6f7';
+        ui.accent.value = savedAccent;
+        
+        // Применяем стили из памяти
+        document.documentElement.style.setProperty('--accent', savedAccent);
+        document.documentElement.style.setProperty('--blur-amount', `${ui.blurSlider.value}px`);
+        if (ui.bgInput.value) document.documentElement.style.setProperty('--bg-image', `url('${ui.bgInput.value}')`);
+        if (ui.theme.value !== 'dark') document.documentElement.setAttribute('data-theme', ui.theme.value);
+        document.getElementById('bg-blobs').style.opacity = (ui.bgToggle.checked && !ui.bgInput.value) ? '1' : '0';
+        
+        // Скрытие приветствия и погоды при инициализации
+        document.getElementById('weather-widget').style.display = ui.weatherToggle.checked ? 'flex' : 'none';
+        document.getElementById('greeting').style.display = ui.greetingToggle.checked ? 'block' : 'none';
+
+        updateLayoutCentering();
+        updateClockStyle();
+        updateCountdown();
+        
+        if (ui.newsToggle.checked) { document.getElementById('news-wrapper').classList.add('active'); loadNewsCategory('general'); }
+        if (ui.toolsToggle.checked) { document.getElementById('tools-wrapper').classList.add('active'); }
+
+        updateClock(); setInterval(updateClock, 1000);
+        setInterval(updateCountdown, 60000);
+        renderBookmarks(); renderTodos();
+        
+        if (ui.weatherToggle.checked) setTimeout(requestWeather, 1000);
+
+        document.getElementById('btn-settings').onclick = () => openModal('modal-settings');
+
+        ui.accent.addEventListener('input', e => { document.documentElement.style.setProperty('--accent', e.target.value); localStorage.setItem('accentColor', e.target.value); });
+        ui.blurSlider.addEventListener('input', e => { document.documentElement.style.setProperty('--blur-amount', `${e.target.value}px`); localStorage.setItem('blurAmount', e.target.value); });
+        ui.clockStyle.addEventListener('change', e => { localStorage.setItem('clockStyle', e.target.value); updateClockStyle(); });
+        
+        ui.bgInput.addEventListener('input', e => { 
+            const val = e.target.value; 
+            document.documentElement.style.setProperty('--bg-image', val ? `url('${val}')` : 'none'); 
+            document.getElementById('bg-blobs').style.opacity = (ui.bgToggle.checked && !val) ? '1' : '0';
+            localStorage.setItem('bgImage', val); 
+        });
+
+        ui.engine.addEventListener('change', e => localStorage.setItem('searchEngine', e.target.value));
+        ui.theme.addEventListener('change', e => { localStorage.setItem('theme', e.target.value); e.target.value === 'dark' ? document.documentElement.removeAttribute('data-theme') : document.documentElement.setAttribute('data-theme', e.target.value); });
+        ui.bgToggle.addEventListener('change', e => { localStorage.setItem('showBg', e.target.checked); document.getElementById('bg-blobs').style.opacity = (e.target.checked && !ui.bgInput.value) ? '1' : '0'; });
+        
+        ui.countdownToggle.addEventListener('change', e => { localStorage.setItem('showCountdown', e.target.checked); updateCountdown(); });
+        ui.countdownTitleInput.addEventListener('input', e => { localStorage.setItem('countdownTitle', e.target.value); updateCountdown(); });
+        ui.countdownDateInput.addEventListener('change', e => { localStorage.setItem('countdownDate', e.target.value); updateCountdown(); });
+
+        ui.weatherToggle.addEventListener('change', e => {
+            localStorage.setItem('showWeather', e.target.checked);
+            document.getElementById('weather-widget').style.display = e.target.checked ? 'flex' : 'none';
+            if (e.target.checked) requestWeather();
+        });
+
+        ui.greetingToggle.addEventListener('change', e => {
+            localStorage.setItem('showGreeting', e.target.checked);
+            document.getElementById('greeting').style.display = e.target.checked ? 'block' : 'none';
+        });
+
+        ui.newsToggle.addEventListener('change', e => {
+            localStorage.setItem('showNews', e.target.checked); updateLayoutCentering();
+            if (e.target.checked) { document.getElementById('news-wrapper').classList.add('active'); loadNewsCategory(document.querySelector('.news-tab.active').dataset.category); } 
+            else document.getElementById('news-wrapper').classList.remove('active'); 
+        });
+        ui.toolsToggle.addEventListener('change', e => {
+            localStorage.setItem('showTools', e.target.checked); updateLayoutCentering();
+            e.target.checked ? document.getElementById('tools-wrapper').classList.add('active') : document.getElementById('tools-wrapper').classList.remove('active'); 
+        });
+        ui.zenToggle.addEventListener('change', e => { localStorage.setItem('zenMode', e.target.checked); updateLayoutCentering(); });
+
+        document.getElementById('search-form').addEventListener('submit', (e) => {
+            e.preventDefault(); const q = document.getElementById('search-input').value.trim(); if (!q) return;
+            const engine = localStorage.getItem('searchEngine') || 'yandex';
+            window.location.href = engine === 'yandex' ? `https://yandex.ru/search/?text=${encodeURIComponent(q)}` : engine === 'google' ? `https://www.google.com/search?q=${encodeURIComponent(q)}` : `https://duckduckgo.com/?q=${encodeURIComponent(q)}`;
+        });
+
+        document.getElementById('add-bm-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            let url = document.getElementById('bm-url').value.trim();
+            if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+            bookmarks.push({ url: url, title: document.getElementById('bm-title').value.trim(), folder: document.getElementById('bm-folder').value.trim(), customIcon: document.getElementById('bm-icon').value.trim() });
+            localStorage.setItem('bookmarks', JSON.stringify(bookmarks));
+            document.getElementById('add-bm-form').reset(); closeModal('modal-add-bm'); renderBookmarks();
+        });
+
+        window.deleteBookmark = function(event, index) { event.preventDefault(); bookmarks.splice(index, 1); localStorage.setItem('bookmarks', JSON.stringify(bookmarks)); renderBookmarks(); };
+
+        document.querySelectorAll('.news-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                document.querySelectorAll('.news-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active'); loadNewsCategory(e.target.dataset.category);
+            });
+        });
+    </script>
+</body>
+</html>
